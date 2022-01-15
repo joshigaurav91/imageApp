@@ -1,24 +1,29 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const multer = require('multer')
 const upload = multer({ dest: 'images/' })
-app.use('/images', express.static('images'))
+//app.use('/images', express.static('images'))
 const fs = require('fs')
+const database = require('./database')
+const path = require('path')
+app.use(express.static(path.join(__dirname, "build")))
 
 app.get("/api/images", async (req, res) => {
     const images = await database.getImages()
+    console.log(images)
     res.send({images})
 })
 
-app.post('/api/images', upload.single('image'), (req, res) => {
+app.post('/api/images', upload.single('image'), async (req, res) => {
     
     const imagePath = req.file.path
     const description = req.body.description
 
     // Save this data to a database probably
-
-    console.log(description, imagePath)
-    res.send({description, imagePath})
+    const image = await database.addImage(imagePath, description)
+    console.log(description, imagePath, req.file)
+    res.send({image})
 })
 
 app.get('/images/:imageName', (req, res) => {
@@ -29,4 +34,5 @@ app.get('/images/:imageName', (req, res) => {
     readStream.pipe(res)
 })
 
-app.listen(8080, () => console.log("listening on port 8080"))
+const port = process.env.PORT || 8080
+app.listen(port, () => console.log(`listening on port ${port}`))
